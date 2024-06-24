@@ -1,162 +1,233 @@
+#include <fcntl.h>
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <unistd.h>
+#include <unordered_map>
 #include <vector>
 
-class Serializable {
+class ILSerializable {
 public:
-  virtual ~Serializable() = default;
-  virtual void serialize(std::ofstream &ofs) const = 0;
-  virtual void deserialize(std::ifstream &ifs) = 0;
-  virtual void print() const = 0;
-  virtual std::string getType() const = 0;
+  virtual ~ILSerializable() = default;
+  virtual bool Serialize(int fd) const = 0;
+  virtual ILSerializable *Deserialize(int fd) = 0;
+  virtual bool GetType(int &type) const = 0;
+  virtual void Print() const = 0;
 };
 
-class MyClass1 : public Serializable {
+class CA_LL : public ILSerializable {
+private:
+  int i;
+
 public:
-  int data1;
+  CA_LL(int value = 0) : i(value) {}
 
-  MyClass1(int d1 = 0) : data1(d1) {}
-
-  void serialize(std::ofstream &ofs) const override {
-    ofs.write(reinterpret_cast<const char *>(&data1), sizeof(data1));
+  bool Serialize(int fd) const override {
+    if (::write(fd, &i, sizeof(int)) == -1)
+      return false;
+    return true;
   }
 
-  void deserialize(std::ifstream &ifs) override {
-    ifs.read(reinterpret_cast<char *>(&data1), sizeof(data1));
+  ILSerializable *Deserialize(int fd) override {
+    CA_LL *p = new CA_LL();
+    if (::read(fd, &(p->i), sizeof(int)) == -1) {
+      delete p;
+      return nullptr;
+    }
+    return p;
   }
 
-  void print() const override {
-    std::cout << "MyClass1 Data: " << data1 << std::endl;
+  bool GetType(int &type) const override {
+    type = 0;
+    return true;
   }
 
-  std::string getType() const override { return "MyClass1"; }
+  void Print() const override {
+    std::cout << "CA_LL Value of i: " << i << std::endl;
+  }
 };
 
-class MyClass2 : public Serializable {
+class CB_LL : public ILSerializable {
+private:
+  int x, y;
+
 public:
-  int data2;
-  int data3;
+  CB_LL(int valueX = 0, int valueY = 0) : x(valueX), y(valueY) {}
 
-  MyClass2(int d2 = 0, int d3 = 0) : data2(d2), data3(d3) {}
-
-  void serialize(std::ofstream &ofs) const override {
-    ofs.write(reinterpret_cast<const char *>(&data2), sizeof(data2));
-    ofs.write(reinterpret_cast<const char *>(&data3), sizeof(data3));
+  bool Serialize(int fd) const override {
+    if (::write(fd, &x, sizeof(int)) == -1)
+      return false;
+    if (::write(fd, &y, sizeof(int)) == -1)
+      return false;
+    return true;
   }
 
-  void deserialize(std::ifstream &ifs) override {
-    ifs.read(reinterpret_cast<char *>(&data2), sizeof(data2));
-    ifs.read(reinterpret_cast<char *>(&data3), sizeof(data3));
+  ILSerializable *Deserialize(int fd) override {
+    CB_LL *p = new CB_LL();
+    if (::read(fd, &(p->x), sizeof(int)) == -1) {
+      delete p;
+      return nullptr;
+    }
+    if (::read(fd, &(p->y), sizeof(int)) == -1) {
+      delete p;
+      return nullptr;
+    }
+    return p;
   }
 
-  void print() const override {
-    std::cout << "MyClass2 Data: " << data2 << ", " << data3 << std::endl;
+  bool GetType(int &type) const override {
+    type = 1;
+    return true;
   }
 
-  std::string getType() const override { return "MyClass2"; }
+  void Print() const override {
+    std::cout << "CB_LL Value of x: " << x << ", y: " << y << std::endl;
+  }
 };
 
-class MyClass3 : public Serializable {
+class CC_LL : public ILSerializable {
+private:
+  int a, b, c;
+
 public:
-  int data4;
-  int data5;
-  int data6;
+  CC_LL(int valueA = 0, int valueB = 0, int valueC = 0)
+      : a(valueA), b(valueB), c(valueC) {}
 
-  MyClass3(int d4 = 0, int d5 = 0, int d6 = 0)
-      : data4(d4), data5(d5), data6(d6) {}
-
-  void serialize(std::ofstream &ofs) const override {
-    ofs.write(reinterpret_cast<const char *>(&data4), sizeof(data4));
-    ofs.write(reinterpret_cast<const char *>(&data5), sizeof(data5));
-    ofs.write(reinterpret_cast<const char *>(&data6), sizeof(data6));
+  bool Serialize(int fd) const override {
+    if (::write(fd, &a, sizeof(int)) == -1)
+      return false;
+    if (::write(fd, &b, sizeof(int)) == -1)
+      return false;
+    if (::write(fd, &c, sizeof(int)) == -1)
+      return false;
+    return true;
   }
 
-  void deserialize(std::ifstream &ifs) override {
-    ifs.read(reinterpret_cast<char *>(&data4), sizeof(data4));
-    ifs.read(reinterpret_cast<char *>(&data5), sizeof(data5));
-    ifs.read(reinterpret_cast<char *>(&data6), sizeof(data6));
+  ILSerializable *Deserialize(int fd) override {
+    CC_LL *p = new CC_LL();
+    if (::read(fd, &(p->a), sizeof(int)) == -1) {
+      delete p;
+      return nullptr;
+    }
+    if (::read(fd, &(p->b), sizeof(int)) == -1) {
+      delete p;
+      return nullptr;
+    }
+    if (::read(fd, &(p->c), sizeof(int)) == -1) {
+      delete p;
+      return nullptr;
+    }
+    return p;
   }
 
-  void print() const override {
-    std::cout << "MyClass3 Data: " << data4 << ", " << data5 << ", " << data6
+  bool GetType(int &type) const override {
+    type = 2;
+    return true;
+  }
+
+  void Print() const override {
+    std::cout << "CC_LL Value of a: " << a << ", b: " << b << ", c: " << c
               << std::endl;
   }
-
-  std::string getType() const override { return "MyClass3"; }
 };
 
-void serializeObjects(
-    const std::string &filename,
-    const std::vector<std::shared_ptr<Serializable>> &objects) {
-  std::ofstream ofs(filename, std::ios::binary);
-  if (!ofs) {
-    std::cerr << "Failed to write the file." << std::endl;
-    return;
-  }
+class CLSerializer {
+public:
+  bool Serialize(const char *pFilePath,
+                 const std::vector<std::shared_ptr<ILSerializable>> &v) {
+    int fd = ::open(pFilePath, O_RDWR | O_CREAT | O_TRUNC, 0666);
+    if (fd == -1)
+      return false;
 
-  size_t size = objects.size();
-  ofs.write(reinterpret_cast<const char *>(&size), sizeof(size));
-  for (const auto &obj : objects) {
-    std::string type = obj->getType();
-    size_t typeSize = type.size();
-    ofs.write(reinterpret_cast<const char *>(&typeSize), sizeof(typeSize));
-    ofs.write(type.c_str(), typeSize);
-    obj->serialize(ofs);
-  }
+    for (const auto &obj : v) {
+      int type;
+      obj->GetType(type);
+      if (::write(fd, &type, sizeof(type)) == -1) {
+        ::close(fd);
+        return false;
+      }
 
-  ofs.close();
-}
-
-void deserializeObjects(const std::string &filename,
-                        std::vector<std::shared_ptr<Serializable>> &objects) {
-  std::ifstream ifs(filename, std::ios::binary);
-  if (!ifs) {
-    std::cerr << "Error opening file for reading." << std::endl;
-    return;
-  }
-
-  size_t size;
-  ifs.read(reinterpret_cast<char *>(&size), sizeof(size));
-  objects.resize(size);
-
-  for (size_t i = 0; i < size; ++i) {
-    size_t typeSize;
-    ifs.read(reinterpret_cast<char *>(&typeSize), sizeof(typeSize));
-    std::string type(typeSize, ' ');
-    ifs.read(&type[0], typeSize);
-
-    std::shared_ptr<Serializable> obj;
-    if (type == "MyClass1") {
-      obj = std::make_shared<MyClass1>();
-    } else if (type == "MyClass2") {
-      obj = std::make_shared<MyClass2>();
-    } else if (type == "MyClass3") {
-      obj = std::make_shared<MyClass3>();
+      if (!obj->Serialize(fd)) {
+        ::close(fd);
+        return false;
+      }
     }
-    obj->deserialize(ifs);
-    objects[i] = obj;
+
+    ::close(fd);
+    return true;
   }
 
-  ifs.close();
-}
+  bool Deserialize(const char *pFilePath,
+                   std::vector<std::shared_ptr<ILSerializable>> &v) {
+    int fd = ::open(pFilePath, O_RDONLY);
+    if (fd == -1)
+      return false;
+
+    while (true) {
+      int nType;
+      int r = ::read(fd, &nType, sizeof(nType));
+      if (r == 0) // EOF
+        break;
+      if (r == -1) {
+        ::close(fd);
+        return false;
+      }
+
+      std::shared_ptr<ILSerializable> obj;
+      if (m_registry.find(nType) != m_registry.end()) {
+        obj.reset(m_registry[nType]->Deserialize(fd));
+        if (obj) {
+          v.push_back(obj);
+        }
+      }
+    }
+
+    ::close(fd);
+    return true;
+  }
+
+  void Register(int type, ILSerializable *prototype) {
+    m_registry[type] = prototype;
+  }
+
+private:
+  std::unordered_map<int, ILSerializable *> m_registry;
+};
 
 int main() {
-  std::vector<std::shared_ptr<Serializable>> objects = {
-      std::make_shared<MyClass1>(MyClass1{1}),
-      std::make_shared<MyClass2>(MyClass2{2, 3}),
-      std::make_shared<MyClass3>(MyClass3{4, 5, 6}),
-  };
+  {
+    CA_LL a1(2);
+    CB_LL b1(3);
+    CB_LL b2(4);
+    CA_LL a2(5);
+    CC_LL c1(1, 2, 3);
+    CC_LL c2(4, 5, 6);
 
-  std::string filename = "data";
+    std::vector<std::shared_ptr<ILSerializable>> v;
 
-  serializeObjects(filename, objects);
+    v.push_back(std::make_shared<CA_LL>(a1));
+    v.push_back(std::make_shared<CB_LL>(b1));
+    v.push_back(std::make_shared<CB_LL>(b2));
+    v.push_back(std::make_shared<CA_LL>(a2));
+    v.push_back(std::make_shared<CC_LL>(c1));
+    v.push_back(std::make_shared<CC_LL>(c2));
 
-  std::vector<std::shared_ptr<Serializable>> deserializedObjects;
-  deserializeObjects(filename, deserializedObjects);
+    CLSerializer s;
+    s.Serialize("data", v);
+  }
 
-  for (const auto &obj : deserializedObjects) {
-    obj->print();
+  {
+    CLSerializer s;
+    s.Register(0, new CA_LL());
+    s.Register(1, new CB_LL());
+    s.Register(2, new CC_LL());
+
+    std::vector<std::shared_ptr<ILSerializable>> v;
+    s.Deserialize("data", v);
+
+    for (const auto &obj : v) {
+      obj->Print();
+    }
   }
 
   return 0;

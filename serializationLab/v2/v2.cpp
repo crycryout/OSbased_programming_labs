@@ -2,70 +2,90 @@
 #include <iostream>
 #include <vector>
 
-class MyClass {
+class CA_LL {
+private:
+  int i;
+
 public:
-  int data;
+  CA_LL(int value = 0) : i(value) {}
 
-  void serialize(std::ofstream &ofs) const {
-    ofs.write(reinterpret_cast<const char *>(&data), sizeof(data));
+  bool Serialize(std::ofstream &outFile) const {
+    outFile.write(reinterpret_cast<const char *>(&i), sizeof(i));
+    return outFile.good();
   }
 
-  void deserialize(std::ifstream &ifs) {
-    ifs.read(reinterpret_cast<char *>(&data), sizeof(data));
+  bool Deserialize(std::ifstream &inFile) {
+    inFile.read(reinterpret_cast<char *>(&i), sizeof(i));
+    return inFile.good();
   }
 
-  void print() const { std::cout << "Data: " << data << std::endl; }
+  void Print() const { std::cout << "Value of i: " << i << std::endl; }
 };
 
-void serializeObjects(const std::string &filename,
-                      const std::vector<MyClass> &objects) {
-  std::ofstream ofs(filename, std::ios::binary);
-  if (!ofs) {
-    std::cerr << "Failed to write file." << std::endl;
-    return;
+class SerializerForCA_LLs {
+public:
+  bool Serialize(const char *pFilePath, const std::vector<CA_LL> &v) {
+    std::ofstream outFile(pFilePath, std::ios::binary);
+    if (!outFile) {
+      std::cerr << "Failed to open file for writing: " << pFilePath
+                << std::endl;
+      return false;
+    }
+
+    size_t size = v.size();
+    outFile.write(reinterpret_cast<const char *>(&size), sizeof(size));
+
+    for (const auto &obj : v) {
+      if (!obj.Serialize(outFile)) {
+        std::cerr << "Failed to serialize object." << std::endl;
+        return false;
+      }
+    }
+
+    outFile.close();
+    return true;
   }
 
-  size_t size = objects.size();
-  ofs.write(reinterpret_cast<const char *>(&size),
-            sizeof(size)); // 写入对象数量
+  bool Deserialize(const char *pFilePath, std::vector<CA_LL> &v) {
+    std::ifstream inFile(pFilePath, std::ios::binary);
+    if (!inFile) {
+      std::cerr << "Failed to open file for reading: " << pFilePath
+                << std::endl;
+      return false;
+    }
 
-  for (const auto &obj : objects) {
-    obj.serialize(ofs);
+    size_t size;
+    inFile.read(reinterpret_cast<char *>(&size), sizeof(size));
+    v.resize(size);
+
+    for (auto &obj : v) {
+      if (!obj.Deserialize(inFile)) {
+        std::cerr << "Failed to deserialize object." << std::endl;
+        return false;
+      }
+    }
+
+    inFile.close();
+    return true;
   }
-
-  ofs.close();
-}
-
-std::vector<MyClass> deserializeObjects(const std::string &filename) {
-  std::ifstream ifs(filename, std::ios::binary);
-  if (!ifs) {
-    std::cerr << "Failed to read file." << std::endl;
-    return {};
-  }
-
-  size_t size;
-  ifs.read(reinterpret_cast<char *>(&size), sizeof(size));
-
-  std::vector<MyClass> objects(size);
-  for (auto &obj : objects) {
-    obj.deserialize(ifs);
-  }
-
-  ifs.close();
-  return objects;
-}
+};
 
 int main() {
-  std::vector<MyClass> objects = {{42}, {13}, {7}, {99}};
+  std::vector<CA_LL> objects = {CA_LL(1), CA_LL(2), CA_LL(3)};
+  const char *filePath = "serialized_objects.bin";
 
-  std::string filename = "data";
+  SerializerForCA_LLs serializer;
 
-  serializeObjects(filename, objects);
+  if (serializer.Serialize(filePath, objects)) {
+    std::cout << "Objects serialized successfully." << std::endl;
+  }
 
-  std::vector<MyClass> deserializedObjects = deserializeObjects(filename);
-
-  for (const auto &obj : deserializedObjects) {
-    obj.print();
+  std::vector<CA_LL> newObjects;
+  if (serializer.Deserialize(filePath, newObjects)) {
+    std::cout << "Objects deserialized successfully." << std::endl;
+    for (const auto &obj : newObjects) {
+      obj.Print();
+    }
   }
 
   return 0;

@@ -1,42 +1,55 @@
 #include <fstream>
 #include <iostream>
 
-class MyClass {
+class CA_LL {
+private:
+  int i;
+
 public:
-  int data;
+  CA_LL(int value = 0) : i(value) {}
 
-  void serialize(const std::string &filename) const {
-    std::ofstream ofs(filename, std::ios::binary);
-    if (!ofs) {
-      std::cerr << "Failed to write the file." << std::endl;
-      return;
+  bool Serialize(const char *pFilePath) {
+    std::ofstream outFile(pFilePath, std::ios::binary);
+    if (!outFile) {
+      std::cerr << "Failed to open file for writing: " << pFilePath
+                << std::endl;
+      return false;
     }
 
-    ofs.write(reinterpret_cast<const char *>(&data), sizeof(data));
-    ofs.close();
+    outFile.write(reinterpret_cast<char *>(&i), sizeof(i));
+    outFile.close();
+    return true;
   }
 
-  void deserialize(const std::string &filename) {
-    std::ifstream ifs(filename, std::ios::binary);
-    if (!ifs) {
-      std::cerr << "Failed to read the file." << std::endl;
-      return;
+  bool Deserialize(const char *pFilePath) {
+    std::ifstream inFile(pFilePath, std::ios::binary);
+    if (!inFile) {
+      std::cerr << "Failed to open file for reading: " << pFilePath
+                << std::endl;
+      return false;
     }
 
-    ifs.read(reinterpret_cast<char *>(&data), sizeof(data));
-    ifs.close();
+    inFile.read(reinterpret_cast<char *>(&i), sizeof(i));
+    inFile.close();
+    return true;
   }
 
-  void print() const { std::cout << "Data: " << data << std::endl; }
+  void Print() const { std::cout << "Value of i: " << i << std::endl; }
 };
 
 int main() {
-  MyClass obj1;
-  obj1.data = 42;
-  std::string filename = "data";
-  obj1.serialize(filename);
-  MyClass obj2;
-  obj2.deserialize(filename);
-  obj2.print();
+  CA_LL obj(42);
+  const char *filePath = "serialized_object.bin";
+
+  if (obj.Serialize(filePath)) {
+    std::cout << "Object serialized successfully." << std::endl;
+  }
+
+  CA_LL newObj;
+  if (newObj.Deserialize(filePath)) {
+    std::cout << "Object deserialized successfully." << std::endl;
+    newObj.Print();
+  }
+
   return 0;
 }
