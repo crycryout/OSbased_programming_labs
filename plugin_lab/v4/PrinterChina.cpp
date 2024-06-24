@@ -1,13 +1,10 @@
 #include "PrinterChina.h"
 #include <iostream>
 
-class PrinterChina : public Printer {
-public:
-  void Print() override { std::cout << "Hello China" << std::endl; }
+void PrinterChina::Print() { std::cout << "Hello China" << std::endl; }
 
-  const char *GetID() override { return "China"; }
+const char *PrinterChina::GetID() { return "China"; }
 
-  const char *Help() override { return "Prints Hello China"; }
-};
+const char *PrinterChina::GetDescription() { return "Prints Hello China"; }
 
-extern "C" Printer *CreatePrinter() { return new PrinterChina(); }
+extern "C" IPrintPlugin *CreatePlugin() { return new PrinterChina(); }

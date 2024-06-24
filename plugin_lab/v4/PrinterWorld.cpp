@@ -1,13 +1,10 @@
 #include "PrinterWorld.h"
 #include <iostream>
 
-class PrinterWorld : public Printer {
-public:
-  void Print() override { std::cout << "Hello World" << std::endl; }
+void PrinterWorld::Print() { std::cout << "Hello World" << std::endl; }
 
-  const char *GetID() override { return "World"; }
+const char *PrinterWorld::GetID() { return "World"; }
 
-  const char *Help() override { return "Prints Hello World"; }
-};
+const char *PrinterWorld::GetDescription() { return "Prints Hello World"; }
 
-extern "C" Printer *CreatePrinter() { return new PrinterWorld(); }
+extern "C" IPrintPlugin *CreatePlugin() { return new PrinterWorld(); }

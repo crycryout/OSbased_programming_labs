@@ -1,22 +1,13 @@
 #ifndef PRINTERWORLD_H
 #define PRINTERWORLD_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "IPrintPlugin.h"
 
-class Printer {
+class PrinterWorld : public IPrintPlugin {
 public:
-  virtual void Print() = 0;
-  virtual const char *GetID() = 0;
-  virtual const char *Help() = 0;
-  virtual ~Printer() {}
+  void Print() override;
+  const char *GetID() override;
+  const char *GetDescription() override;
 };
-
-extern "C" Printer *CreatePrinter();
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // PRINTERWORLD_H
